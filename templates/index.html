@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classifier - Animals & Objects</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .upload-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section input[type="file"] {
+            margin: 20px 0;
+        }
+        .upload-section button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .upload-section button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .result-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .result-item .class {
+            font-weight: bold;
+        }
+        .result-item .probability {
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Classifier</h1>
+        <p style="text-align: center; color: #666;">Upload an image of an animal or object to classify it using AI.</p>
+
+        <div class="upload-section">
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file-input" name="file" accept="image/*" required>
+                <br>
+                <button type="submit">Classify Image</button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <p>Classifying image...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('file-input');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const results = document.getElementById('results');
+
+            if (!fileInput.files[0]) {
+                error.textContent = 'Please select an image file.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            loading.style.display = 'block';
+            error.textContent = '';
+            results.innerHTML = '';
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                if (data.error) {
+                    error.textContent = data.error;
+                } else {
+                    displayResults(data.predictions);
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                error.textContent = 'An error occurred. Please try again.';
+                console.error(err);
+            });
+        });
+
+        function displayResults(predictions) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Top Predictions:</h3>';
+
+            predictions.forEach(pred => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <span class="class">${pred.class}</span>
+                    <span class="probability">${(pred.probability * 100).toFixed(2)}%</span>
+                `;
+                resultsDiv.appendChild(resultItem);
+            });
+        }
+    </script>
+</body>
+</html>
